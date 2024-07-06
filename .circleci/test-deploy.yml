@@ -1,0 +1,101 @@
+version: 2.1
+
+orbs:
+  # orb under test
+  gpg: {}
+  # changelog: https://github.com/CircleCI-Public/BATS-orb/releases
+  bats: circleci/bats@1.1.0
+  # orb info: https://circleci.com/developer/orbs/orb/circleci/orb-tools
+  # changelog: https://github.com/CircleCI-Public/orb-tools-orb/releases
+  orb-tools: circleci/orb-tools@12.1.0
+  # orb info: https://circleci.com/developer/orbs/orb/rynkowsg/rynkowsg
+  rynkowsg: rynkowsg/rynkowsg@0.5.0
+
+# Use this tag to ensure test jobs always run,
+# even though the downstream publish job will only run on release tags.
+filters: &filters
+  tags:
+    only: /.*/
+
+# Filter for release tags.
+release-filters: &release-filters
+  branches:
+    ignore: /.*/
+  tags:
+    only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+
+jobs:
+  # tests setting up GPG on various platforms
+  test_setup:
+    parameters:
+      executor: {type: string}
+    executor: <<parameters.executor>>
+    steps:
+      - checkout
+      - when:
+          condition: {not: {equal: ["<<parameters.executor>>", "rynkowsg/macos"]}}
+          steps:
+            - gpg/setup:
+                debug: false
+      - when:
+          condition: {equal: ["<<parameters.executor>>", "rynkowsg/macos"]}
+          steps:
+            - run:
+                name: Install bash
+                command: |
+                  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+                  brew install bash
+            - gpg/setup:
+                bash_path: /usr/local/bin/bash
+                debug: false
+      - run:
+          name: Check
+          command: |
+            set -x
+            pwd
+            ls -al
+            gpg --version
+            gpg -k --keyid-format long
+            gpg --decrypt --pinentry-mode loopback --passphrase $GPG_PASSPHRASE test/res/msg.txt.gpg
+            # TODO: replace this by a test
+
+workflows:
+  test-deploy:
+    jobs:
+      - test_setup:
+          name: "test_setup; E:<<matrix.executor>>"
+          matrix:
+            parameters:
+              executor:
+                - rynkowsg/docker_arm_cimg_base
+                - rynkowsg/docker_x86_cimg_base
+                - rynkowsg/machine_x86_android
+                - rynkowsg/machine_arm_ubuntu2204
+                - rynkowsg/machine_x86_ubuntu2204
+#                - rynkowsg/macos
+          filters: *filters
+
+      - orb-tools/pack:
+          requires:
+            - test_setup
+          filters: *filters
+
+      - orb-tools/publish:
+          name: publish-dev
+          orb_name: rynkowsg/gpg
+          vcs_type: <<pipeline.project.type>>
+          pub_type: dev
+          requires:
+            - orb-tools/pack
+          context: circleci/orb-publishing-context
+          filters: *filters
+
+      - orb-tools/publish:
+          name: publish-prod
+          orb_name: rynkowsg/gpg
+          vcs_type: <<pipeline.project.type>>
+          pub_type: production
+          requires:
+            - publish-dev
+          context: circleci/orb-publishing-context
+          filters: *release-filters

@@ -1,0 +1,7 @@
+version: 2.1
+
+description: >
+  Simplifies GPG setup and usage for secure CI/CD workflows in CircleCI.
+
+display:
+  source_url: "https://github.com/rynkowsg/gpg-orb"

@@ -1,0 +1,23 @@
+description: |
+  Setup with no params.
+  It expects from environment variables, to hold three values:
+  - `GPG_PUBLIC_KEY_B64` (optionally)
+  - `GPG_PRIVATE_KEY_B64`
+  - `GPG_PASSPHRASE`
+
+usage:
+  version: 2.1
+
+  orbs:
+    checkout: rynkowsg/gpg@0.1.0
+
+  jobs:
+    test:
+      docker: [{image: "cimg/base:stable"}]
+      steps:
+        - gpg/setup
+
+  workflows:
+    main-workflow:
+      jobs:
+        - test

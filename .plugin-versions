@@ -1,0 +1,5 @@
+# plugin-name        git-url                                                git-ref (hash, tag, or branch)
+asdf-plugin-manager  https://github.com/asdf-community/asdf-plugin-manager  ecd1642
+babashka             https://github.com/fredZen/asdf-babashka.git           37fc5db
+circleci-cli         https://github.com/ucpr/asdf-circleci-cli.git          fee038b
+java                 https://github.com/halcyon/asdf-java.git               c401062

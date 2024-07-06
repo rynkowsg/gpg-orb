@@ -1,0 +1,43 @@
+description: >
+  Sets up GPG.
+
+# REMINDER: If you change anything here, copy-paste it to the test job.
+parameters:
+  bash_path:
+    type: string
+    default: ""
+    description: |
+      The command requires at least Bash 4.
+      If the default is lower, it needs to be installed before the command.
+      If value not provided, the default bash is used.
+  debug:
+    type: boolean
+    default: false
+    description: |
+      When true, debug command logging is enabled
+  name_displayed:
+    type: string
+    default: "gpg/setup"
+    description: |
+      The display name for the command.
+
+steps:
+  # when no custom bash provided
+  - when:
+      condition: {equal: [<<parameters.bash_path>>, ""]}
+      steps:
+        - run:
+            environment:
+              PARAM_DEBUG: <<parameters.debug>>
+            name: <<parameters.name_displayed>>
+            command: <<include(scripts/gen/setup.bash)>>
+  # when custom bash provided
+  - when:
+      condition: {not: {equal: [<<parameters.bash_path>>, ""]}}
+      steps:
+        - run:
+            shell: <<parameters.bash_path>>
+            environment:
+              PARAM_DEBUG: <<parameters.debug>>
+            name: <<parameters.name_displayed>>
+            command: <<include(scripts/gen/setup.bash)>>
