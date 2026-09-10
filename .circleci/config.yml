@@ -46,8 +46,8 @@ jobs:
             shfmt --version
       - asdf/cache_save
       - rynkowsg/install_sosh: {version: "v0.2.0"}
-      - run: make lint
-      - run: make format-check
+      - run: make lint-shell/check
+      - run: make format-shell/check
 
 workflows:
   lint-pack:
