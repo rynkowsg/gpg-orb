@@ -2,7 +2,7 @@ version: 2.1
 setup: true
 orbs:
   # orb info: https://circleci.com/developer/orbs/orb/rynkowsg/asdf
-  asdf: rynkowsg/asdf@dev:298f600d32e003bed4136011b12ab651a63b9ed2
+  asdf: rynkowsg/asdf@0.2.0
   # orb info: https://circleci.com/developer/orbs/orb/circleci/orb-tools
   # changelog: https://github.com/CircleCI-Public/orb-tools-orb/releases
   orb-tools: circleci/orb-tools@12.1.0
