@@ -1,8 +1,9 @@
 version: 2.1
 setup: true
 orbs:
-  # orb info: https://circleci.com/developer/orbs/orb/rynkowsg/asdf
-  asdf: rynkowsg/asdf@0.2.0
+  # orb info: https://circleci.com/developer/orbs/orb/rynkowsg/mise
+  # changelog: https://github.com/rynkowsg/mise-orb/blob/main/CHANGELOG.md
+  mise: rynkowsg/mise@0.1.0
   # orb info: https://circleci.com/developer/orbs/orb/circleci/orb-tools
   # changelog: https://github.com/CircleCI-Public/orb-tools-orb/releases
   orb-tools: circleci/orb-tools@12.5.0
@@ -31,30 +32,13 @@ jobs:
     executor: docker_base_small_x86
     steps:
       - checkout
-      - asdf/install: {version: 0.14.0}
-      - asdf/cache_restore
-      - run:
-          name: asdf - add plugin
-          command: |
-            git config --global advice.detachedHead false
-            asdf plugin add babashka https://github.com/fredZen/asdf-babashka.git
-            asdf plugin add java https://github.com/halcyon/asdf-java.git
-            asdf plugin add shellcheck https://github.com/luizm/asdf-shellcheck.git
-            asdf plugin add shfmt https://github.com/luizm/asdf-shfmt.git
-      - run:
-          name: asdf - install tools
-          command: |
-            asdf install java
-            . ~/.asdf/plugins/java/set-java-home.bash
-            asdf install babashka
-            asdf install shellcheck
-            asdf install shfmt
-            bash --version
-            bb --version
-            java --version
-            shellcheck --version
-            shfmt --version
-      - asdf/cache_save
+      - mise/setup:
+          mise_version: v2026.9.4 # https://github.com/jdx/mise/releases
+          # java is here because babashka needs it, and babashka runs sosh.
+          tools: >-
+            babashka java
+            shellcheck
+            shfmt
       - rynkowsg/install_sosh: {version: "v0.2.0"}
       - run: make format-shell/check
       - run: make lint-shell/check
