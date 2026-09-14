@@ -7,22 +7,44 @@ orbs:
   bats: circleci/bats@1.1.0
   # orb info: https://circleci.com/developer/orbs/orb/circleci/orb-tools
   # changelog: https://github.com/CircleCI-Public/orb-tools-orb/releases
-  orb-tools: circleci/orb-tools@12.1.0
-  # orb info: https://circleci.com/developer/orbs/orb/rynkowsg/rynkowsg
-  rynkowsg: rynkowsg/rynkowsg@0.5.0
+  orb-tools: circleci/orb-tools@12.5.0
 
-# Use this tag to ensure test jobs always run,
-# even though the downstream publish job will only run on release tags.
-filters: &filters
-  tags:
-    only: /.*/
+executors:
+  # https://circleci.com/developer/images/image/cimg/base
+  # https://hub.docker.com/r/cimg/base/tags
+  docker_base_medium_arm:
+    docker: [{image: 'cimg/base:2026.09-24.04'}]
+    resource_class: arm.medium
+  docker_base_small_x86:
+    docker: [{image: 'cimg/base:2026.09-24.04'}]
+    resource_class: small
+  # https://circleci.com/developer/machine/image/android
+  machine_android_medium_x86:
+    machine: {image: 'android:2026.05.1'}
+    resource_class: medium
+  # https://circleci.com/developer/machine/image/ubuntu-2604
+  machine_ubuntu2604_medium_arm:
+    machine: {image: 'ubuntu-2604:2026.07.1'}
+    resource_class: arm.medium
+  machine_ubuntu2604_medium_x86:
+    machine: {image: 'ubuntu-2604:2026.07.1'}
+    resource_class: medium
+  # https://circleci.com/developer/machine/image/xcode
+  macos_medium:
+    macos: {xcode: '27.0.0'}
+    resource_class: m4pro.medium
 
-# Filter for release tags.
-release-filters: &release-filters
-  branches:
-    ignore: /.*/
-  tags:
-    only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+# Every branch and every tag. Tags have to be named: a job with no tag filter is
+# skipped when a tag is pushed, and the publish jobs below require these, so on a
+# release tag they would have nothing to wait for.
+run_always: &run_always
+  branches: {only: '/.*/'}
+  tags: {only: '/.*/'}
+
+# Only a release tag, never a branch.
+run_on_release: &run_on_release
+  branches: {ignore: '/.*/'}
+  tags: {only: '/^v[0-9]+\.[0-9]+\.[0-9]+$/'}
 
 jobs:
   # tests setting up GPG on various platforms
@@ -33,12 +55,12 @@ jobs:
     steps:
       - checkout
       - when:
-          condition: {not: {equal: ["<<parameters.executor>>", "rynkowsg/macos"]}}
+          condition: {not: {equal: ["<<parameters.executor>>", "macos_medium"]}}
           steps:
             - gpg/setup:
                 debug: false
       - when:
-          condition: {equal: ["<<parameters.executor>>", "rynkowsg/macos"]}
+          condition: {equal: ["<<parameters.executor>>", "macos_medium"]}
           steps:
             - run:
                 name: Install bash
@@ -67,18 +89,18 @@ workflows:
           matrix:
             parameters:
               executor:
-                - rynkowsg/docker_arm_cimg_base
-                - rynkowsg/docker_x86_cimg_base
-                - rynkowsg/machine_x86_android
-                - rynkowsg/machine_arm_ubuntu2204
-                - rynkowsg/machine_x86_ubuntu2204
-#                - rynkowsg/macos
-          filters: *filters
+                - docker_base_medium_arm
+                - docker_base_small_x86
+                - machine_android_medium_x86
+                - machine_ubuntu2604_medium_arm
+                - machine_ubuntu2604_medium_x86
+#                - macos_medium
+          filters: *run_always
 
       - orb-tools/pack:
           requires:
             - test_setup
-          filters: *filters
+          filters: *run_always
 
       - orb-tools/publish:
           name: publish-dev
@@ -88,7 +110,7 @@ workflows:
           requires:
             - orb-tools/pack
           context: circleci/orb-publishing-context
-          filters: *filters
+          filters: *run_always
 
       - orb-tools/publish:
           name: publish-prod
@@ -98,4 +120,4 @@ workflows:
           requires:
             - publish-dev
           context: circleci/orb-publishing-context
-          filters: *release-filters
+          filters: *run_on_release
